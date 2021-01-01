@@ -1874,7 +1874,10 @@ edit_store_macro_cmd (WEdit * edit)
     }
 
     if (!have_macro)
+    {
         mc_config_del_key (macros_config, section_name, skeyname);
+        g_array_free (macros, TRUE);
+    }
     else
     {
         macros_t macro;
