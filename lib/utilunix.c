@@ -118,7 +118,8 @@ static int_cache uid_cache[UID_CACHE_SIZE];
 static int_cache gid_cache[GID_CACHE_SIZE];
 
 static int error_pipe[2];       /* File descriptors of error pipe */
-static int old_error;           /* File descriptor of old standard error */
+static int old_error = -1;      /* File descriptor of old standard error */
+static int current_error = -1;  /* File descriptor of current error */
 
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
@@ -719,7 +720,8 @@ open_error_pipe (void)
         message (D_NORMAL, _("Warning"), _("Pipe failed"));
 
     old_error = dup (STDERR_FILENO);
-    if (old_error < 0 || close (STDERR_FILENO) != 0 || dup (error_pipe[1]) != STDERR_FILENO)
+    if (old_error < 0 || close (STDERR_FILENO) != 0 ||
+        (current_error = dup (error_pipe[1])) != STDERR_FILENO)
     {
         message (D_NORMAL, _("Warning"), _("Dup failed"));
 
@@ -770,6 +772,12 @@ close_error_pipe (int error, const char *text)
     const char *title;
     char msg[MAX_PIPE_SIZE];
     int len = 0;
+
+    if (current_error >= 0)
+    {
+        close (current_error);
+        current_error = -1;
+    }
 
     /* already closed */
     if (error_pipe[0] == -1)
