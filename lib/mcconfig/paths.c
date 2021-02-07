@@ -137,56 +137,6 @@ mc_config_init_one_config_path (const char *path_base, const char *subdir, GErro
 }
 
 /* --------------------------------------------------------------------------------------------- */
-
-static void
-mc_config_copy (const char *old_name, const char *new_name, GError ** mcerror)
-{
-    mc_return_if_error (mcerror);
-
-    if (g_file_test (old_name, G_FILE_TEST_IS_REGULAR))
-    {
-        char *contents = NULL;
-        size_t length;
-
-        if (g_file_get_contents (old_name, &contents, &length, mcerror))
-            g_file_set_contents (new_name, contents, length, mcerror);
-
-        g_free (contents);
-        return;
-    }
-
-    if (g_file_test (old_name, G_FILE_TEST_IS_DIR))
-    {
-        GDir *dir;
-        const char *dir_name;
-
-        dir = g_dir_open (old_name, 0, mcerror);
-        if (dir == NULL)
-            return;
-
-        if (g_mkdir_with_parents (new_name, 0700) == -1)
-        {
-            g_dir_close (dir);
-            mc_propagate_error (mcerror, 0,
-                                _("An error occurred while migrating user settings: %s"),
-                                unix_error_string (errno));
-            return;
-        }
-
-        while ((dir_name = g_dir_read_name (dir)) != NULL)
-        {
-            char *old_name2, *new_name2;
-
-            old_name2 = g_build_filename (old_name, dir_name, (char *) NULL);
-            new_name2 = g_build_filename (new_name, dir_name, (char *) NULL);
-            mc_config_copy (old_name2, new_name2, mcerror);
-            g_free (new_name2);
-            g_free (old_name2);
-        }
-    }
-}
-
-/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -331,8 +281,7 @@ mc_config_get_full_path (const char *config_name)
     for (rule_index = 0; mc_config_files_reference[rule_index].filename != NULL; rule_index++)
         if (strcmp (config_name, mc_config_files_reference[rule_index].filename) == 0)
             return g_build_filename (*mc_config_files_reference[rule_index].basedir,
-                                     mc_config_files_reference[rule_index].filename,
-                                     (char *) NULL);
+                                     mc_config_files_reference[rule_index].filename, (char *) NULL);
 
     return NULL;
 }
